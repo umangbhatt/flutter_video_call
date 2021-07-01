@@ -1,4 +1,5 @@
 import 'package:provider/provider.dart';
+import 'package:share/share.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:video_call_app/viewModels/video_call_view_model.dart';
@@ -33,20 +34,34 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           bottom: 0,
           right: 0,
           left: 0,
-          child: AspectRatio(
-            aspectRatio: (viewModel.remoteRenderer.videoHeight /
-                        viewModel.remoteRenderer.videoWidth >
-                    0.0)
-                ? viewModel.remoteRenderer.videoHeight /
-                    viewModel.remoteRenderer.videoWidth
-                : 9 / 16,
-            child: Container(
-                key: Key("remote"),
-                child: RTCVideoView(
-                  viewModel.remoteRenderer,
-                  objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                )),
-          ),
+          child: viewModel.remoteRenderer.srcObject != null
+              ? AspectRatio(
+                  aspectRatio: (viewModel.remoteRenderer.videoHeight /
+                              viewModel.remoteRenderer.videoWidth >
+                          0.0)
+                      ? viewModel.remoteRenderer.videoHeight /
+                          viewModel.remoteRenderer.videoWidth
+                      : 9 / 16,
+                  child: Container(
+                      key: Key("remote"),
+                      child: RTCVideoView(
+                        viewModel.remoteRenderer,
+                        objectFit:
+                            RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                      )),
+                )
+              : Container(
+                  decoration: BoxDecoration(color: Colors.grey),
+                  child: TextButton.icon(
+                      onPressed: () {
+                        Share.share('Join Meeting ${viewModel.meetingId}');
+                      },
+                      icon: Icon(Icons.share, color: Colors.black),
+                      label: Text(
+                        'Share meeting id',
+                        style: TextStyle(color: Colors.black),
+                      )),
+                ),
         ),
         Positioned(
           bottom: 0,
@@ -87,32 +102,49 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                         ),
                         padding: EdgeInsets.all(4),
                         child: IconButton(
-                            onPressed: () {},
+                            onPressed: () async {
+                              Navigator.of(context).pop();
+                              Provider.of<VideoCallViewModel>(context,
+                                      listen: false)
+                                  .stopCall();
+                            },
                             icon: Icon(
                               Icons.call_end,
                               color: Colors.white,
                             ))),
                     Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color:
+                              viewModel.isAudioOn ? Colors.white : Colors.grey,
                           shape: BoxShape.circle,
                         ),
                         padding: EdgeInsets.all(4),
                         child: IconButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Provider.of<VideoCallViewModel>(context,
+                                      listen: false)
+                                  .audioMode = !viewModel.isAudioOn;
+                            },
                             icon: Icon(
-                              Icons.mic,
+                              viewModel.isAudioOn ? Icons.mic_off : Icons.mic,
                             ))),
                     Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color:
+                              viewModel.isVideoOn ? Colors.white : Colors.grey,
                           shape: BoxShape.circle,
                         ),
                         padding: EdgeInsets.all(4),
                         child: IconButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Provider.of<VideoCallViewModel>(context,
+                                      listen: false)
+                                  .videoMode = !viewModel.isVideoOn;
+                            },
                             icon: Icon(
-                              Icons.videocam,
+                              viewModel.isVideoOn
+                                  ? Icons.videocam_off
+                                  : Icons.videocam,
                             ))),
                   ],
                 ),

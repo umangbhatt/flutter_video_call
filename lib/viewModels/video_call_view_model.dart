@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
@@ -16,8 +17,27 @@ class VideoCallViewModel extends ChangeNotifier {
   FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   String? meetingId;
+  bool isVideoOn = true;
 
-  
+  bool isAudioOn = true;
+
+  late StreamSubscription firebaseSubscription;
+
+  set videoMode(bool videoMode) {
+    this.isVideoOn = videoMode;
+    localRenderer.srcObject?.getVideoTracks().forEach((element) {
+      element.enabled = videoMode;
+    });
+    notifyListeners();
+  }
+
+  set audioMode(bool audioMode) {
+    this.isAudioOn = audioMode;
+    localRenderer.srcObject?.getAudioTracks().forEach((element) {
+      element.enabled = audioMode;
+    });
+    notifyListeners();
+  }
 
   Future initRenderers() async {
     await localRenderer.initialize();
@@ -95,7 +115,7 @@ class VideoCallViewModel extends ChangeNotifier {
 
   _getUserMedia() async {
     final Map<String, dynamic> constraints = {
-      'audio': false,
+      'audio': true,
       'video': {
         'facingModel': 'user',
       }
@@ -121,13 +141,15 @@ class VideoCallViewModel extends ChangeNotifier {
 
     print('meeting id ${docRef.id}');
 
-    docRef.snapshots().listen((doc) async {
+    firebaseSubscription = docRef.snapshots().listen((doc) async {
       if (doc.exists) {
-        print('meeting doc update ${doc.data()}');
+        print('meeting doc update');
         dynamic dataJSON = doc.data();
         if (dataJSON?['answer'] != null) {
           var offerString = dataJSON?['answer'];
           await _setRemoteDescription(offerString);
+          await firebaseSubscription.cancel();
+          print('meeting doc canceled');
         }
       }
     });
@@ -177,6 +199,21 @@ class VideoCallViewModel extends ChangeNotifier {
         session['candidate'], session['sdpMid'], session['sdpMlineIndex']);
     await _peerConnection!.addCandidate(candidate);
     notifyListeners();
+  }
+
+  Future stopCall() async {
+    await _peerConnection?.close();
+    await _localStream?.dispose();
+    await localRenderer.dispose();
+    await remoteRenderer.dispose();
+    _offer = false;
+    isVideoOn = true;
+    isAudioOn = true;
+    meetingId = null;
+    _peerConnection = null;
+    _localStream = null;
+    localRenderer = RTCVideoRenderer();
+    remoteRenderer = RTCVideoRenderer();
   }
 
   @override
