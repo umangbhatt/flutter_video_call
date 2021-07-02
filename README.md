@@ -1,6 +1,6 @@
 # video_call_app
 
-A new Flutter project.
+P2P Video call in flutter using WebRTC
 
 ## Getting Started
 
