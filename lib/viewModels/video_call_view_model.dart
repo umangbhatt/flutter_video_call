@@ -149,8 +149,13 @@ class VideoCallViewModel extends ChangeNotifier {
           var offerString = dataJSON?['answer'];
           await _setRemoteDescription(offerString);
           await firebaseSubscription.cancel();
-          print('meeting doc canceled');
+          print('meeting doc cancelled');
         }
+        // if(dataJSON?['answerICE']!=null && (dataJSON?['answerICE'] as List<dynamic>).isNotEmpty){
+        //   addCandidate((dataJSON?['answerICE'] as List<dynamic>).first);
+        //   await firebaseSubscription.cancel();
+        //   print('meeting doc cancelled');
+        // }
       }
     });
 
